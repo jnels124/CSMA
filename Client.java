@@ -29,30 +29,32 @@ public class Client {
         String response;
         response = scheduler("COLIDE", delay, true);
         if (delay <= 0) { //Makle sure jobs with negative delay aren't scheduled
-        response =  "NO";
-    }
-    else {
-        response = scheduler("COLIDE", delay, true);
-    }
-    System.out.println("\nNIC detects collision on channel. Current time is " + System.nanoTime());
-    if ("NO".equals(response.toUpperCase())) {
-        if (leftoverTransmissionDuration <= 0) {
-            System.out.println("\nDone with transmitting this frame!. The current time is " + System.nanoTime());
-            System.exit(0);
-        } else {
-            leftoverTransmissionDuration = leftoverTransmissionDuration - (leftoverTransmissionDuration > 1 ? 1 : leftoverTransmissionDuration);
-            System.out.println("The NIC is still transmitting. The leftover transmission time is " + leftoverTransmissionDuration);
-            collisionTask (leftoverTransmissionDuration, 1000 * leftoverTransmissionDuration, totalCollisions);
+            response =  "NO";
         }
-    }
-    else {
-        int backoff = getBackoff(++totalCollisions);
-        System.out.println("NIC detects a collision and aborts transmitting the frame and will sense the channel for re-transmission " + backoff + " later. Local time is " + System.nanoTime());
-        sendAndWait("ABORT", false);
-        sensingTask(backoff * 1000, totalCollisions);
-    }
+        else {
+            response = scheduler("COLIDE", delay, true);
+        }
+        System.out.println("\nNIC detects collision on channel. Current time is " + System.nanoTime());
+        if ("NO".equals(response.toUpperCase())) {
+            if (leftoverTransmissionDuration <= 0) {
+                System.out.println("\nDone with transmitting this frame!. The current time is " + System.nanoTime());
+                System.exit(0);
+            } 
+            else {
+                leftoverTransmissionDuration = leftoverTransmissionDuration - Math.min(1, leftoverTransmissionDuration);
+                System.out.println("The NIC is still transmitting. The leftover transmission time is " + leftoverTransmissionDuration);
+                collisionTask (leftoverTransmissionDuration, 1000 * leftoverTransmissionDuration, totalCollisions);
+            }
+        }
+        else {
+            int backoff = getBackoff(++totalCollisions);
+            System.out.println("NIC detects a collision and aborts transmitting the frame and will sense the channel for re-transmission " + backoff + " later. Local time is " + System.nanoTime());
+            sendAndWait("ABORT", false);
+            System.out.println("Calling sensing task from collision  "  + backoff);
+            sensingTask(backoff * 1000, totalCollisions);
+        }
 
-}
+    }
 
     final private void sensingTask(int delay, int currNumCollisions) throws IOException {
         System.out.println("NIC senses channel to see whether the channel is idle. Current time is " + System.nanoTime());
@@ -112,7 +114,10 @@ public class Client {
 
 
     final private String scheduler (String msg, long delay, boolean waitForResponse) throws IOException{
-            //System.out.println("Entering scheduler");
+            //System.out.println("Entering scheduler");+
+        if (delay < 0) {
+            System.out.println(msg + " Attemmpted a delat less than 0. The delay is  "  + delay);
+        }
         byte [] currBytes = msg.getBytes();
         DatagramPacket outpkt =  new DatagramPacket(currBytes, currBytes.length,
             this.serverAddress, DESTINATION_PORT);

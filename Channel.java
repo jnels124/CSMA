@@ -34,7 +34,7 @@ public class Channel {
             for (Host host : this.connectedHosts) {
                 final long t_start = host.getT_Start();
                 final long t_stop = host.getT_Stop();
-                boolean yesOrNo =  (t_start<= 0);
+                boolean yesOrNo =  (t_start < 0);
                 yesOrNo =
                     yesOrNo || (((t_start + 1000 * this.propDelay) >  t_now) &&
                                 ((t_stop < 0) || ((t_stop + 1000 * this.propDelay) <= t_now)));
@@ -132,7 +132,6 @@ public class Channel {
                 System.out.println( "There was an error wating for SIMSTART\n" + e.getMessage());
             }
         }
-        System.out.println("Sending yes");
         byte [] toClient = "YESSS".getBytes();
         for (Host host : this.connectedHosts) {
             currentPacket = new DatagramPacket(toClient, toClient.length, host.getHostIP(), host.getPort());
