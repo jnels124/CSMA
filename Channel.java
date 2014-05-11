@@ -82,13 +82,14 @@ public class Channel {
             for (Host host : this.connectedHosts) {
                 if (host.getHostIP().equals(currentPacket.getAddress())) {
                     temp = host;
+                    temp.setT_Start(t_now/1000000000);
                     break;
                 }
             }
             if (temp == null) {
                 this.connectedHosts.add(new Host(currentPacket.getAddress(),
                                                  currentPacket.getPort(),
-                                                 t_now,
+                                                 t_now/1000000000,
                                                  -1));
             }
             eventLoop();
@@ -99,6 +100,7 @@ public class Channel {
             for (Host host : this.connectedHosts) {
                 if (host.getHostIP().equals(currentPacket.getAddress())) {
                     temp = host;
+                    temp.setT_Stop(t_now/1000000000);
                     break;
                 }
             }
@@ -106,7 +108,7 @@ public class Channel {
                 this.connectedHosts.add(new Host(currentPacket.getAddress(),
                                                  currentPacket.getPort(),
                                                  -1,
-                                                 t_now));
+                                                 t_now/1000000000));
             }
             eventLoop();
         }

@@ -9,32 +9,36 @@ public class SensingTask extends TimerTask {
     Timer timer;
     int timeToTransmit;
     InetAddress serverAddress;
-
-    public SensingTask (DatagramSocket skt, InetAddress serverAddress, int timeToTransmit) {
+    int leftoverTransmissionDuration;
+    int numCollisions;
+    public SensingTask (DatagramSocket skt, InetAddress serverAddress, int timeToTransmit, int numCollisions) {
         //this.packetToSend = packet;
         this.sendingSocket = skt;
         this.timer = new Timer();
         this.timeToTransmit = timeToTransmit;
         this.serverAddress = serverAddress;
+        this.numCollisions = numCollisions;
+        this.leftoverTransmissionDuration = leftoverTransmissionDuration;
     }
 
     public void run () {
         try {
-            System.out.println("NIC senses channel to see whether the channel is idle. Current time is " + System.nanoTime());
+            System.out.println("NIC senses channel to see whether the channel is idle. Current time is " + System.nanoTime() / 1000000000);
             String response = sendAndWait("IDLE", true);
         if (response.toUpperCase().equals("NO")) {
                 //currTime =
-            System.out.println("\nThe channel is busy right now. The current time is " + System.nanoTime());
-            this.timer.schedule(new SensingTask(this.sendingSocket, this.serverAddress, this.timeToTransmit), 1000);
+            System.out.println("\nThe channel is busy right now. The current time is " + System.nanoTime() / 1000000000);
+            this.timer.schedule(new SensingTask(this.sendingSocket, this.serverAddress, this.timeToTransmit, this.numCollisions), 1000);
         }
         else {
             //System.out.println("First else in handle client ");
             sendAndWait("START", false);
-            System.out.println("\nNIC starts transmitting a frame. Current time is " + System.nanoTime() + "\nThe leftover transmission time is " + this.timeToTransmit);
+            System.out.println("\nNIC starts transmitting a frame. Current time is " + System.nanoTime() / 1000000000 + "\nThe leftover transmission time is " + this.timeToTransmit);
             this.timer.schedule(new CollisionTask(this.sendingSocket,
                                                   this.serverAddress,
                                                   this.timeToTransmit,
-                                                  this.timeToTransmit), 1000);
+                                                  this.timeToTransmit,
+                                                  this.numCollisions), 1000);
         }
             //this.sendingSocket.send(this.packetToSend);
         } catch (Exception e) {

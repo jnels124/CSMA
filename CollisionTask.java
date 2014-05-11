@@ -12,12 +12,12 @@ public class CollisionTask extends TimerTask {
     int timeToTransmit;
 
     public CollisionTask (DatagramSocket skt, InetAddress serverAddress, 
-                            int leftoverTransmissionDuration, int timeToTransmit) {
+                            int leftoverTransmissionDuration, int timeToTransmit, int numCollisions) {
         this.serverAddress = serverAddress;
         this.sendingSocket = skt;
         this.timer = new Timer();
         this.leftoverTransmissionDuration = leftoverTransmissionDuration;
-        this.totalCollisions = 0;
+        this.totalCollisions = numCollisions;
         this.timeToTransmit = timeToTransmit;
     }
 
@@ -31,44 +31,51 @@ public class CollisionTask extends TimerTask {
             else {
                 response = sendAndWait("COLIDE", delay, true);
             }*/
-            System.out.println("\nNIC detects collision on channel. Current time is " + System.nanoTime());
+            System.out.println("\nNIC detects collision on channel. Current time is " + System.nanoTime() / 1000000000);
             if ("NO".equals(response.toUpperCase())) {
-                if (leftoverTransmissionDuration <= 0) {
-                    System.out.println("\nDone with transmitting this frame!. The current time is " + System.nanoTime());
+                if (this.leftoverTransmissionDuration == 0) {
+                    sendAndWait("DONE", false);
+                    System.out.println("\nDone with transmitting this frame!. The current time is " + System.nanoTime() / 1000000000);
                     System.exit(0);
                 } 
-                else {
-                    this.leftoverTransmissionDuration = this.leftoverTransmissionDuration - Math.min(1, leftoverTransmissionDuration);
-                    System.out.println("The NIC is still transmitting. The leftover transmission time is " + leftoverTransmissionDuration);
+                else if (this.leftoverTransmissionDuration > 0) {
+                    this.leftoverTransmissionDuration = this.leftoverTransmissionDuration - Math.min(1, this.leftoverTransmissionDuration);
+                    System.out.println("The NIC is still transmitting. The leftover transmission time is " + this.leftoverTransmissionDuration +
+                                        " The local time is " + System.nanoTime() / 1000000000);
                     this.timer.schedule(new CollisionTask(this.sendingSocket, 
                                                           this.serverAddress,
                                                           this.leftoverTransmissionDuration, 
-                                                          this.timeToTransmit), this.leftoverTransmissionDuration);
+                                                          this.timeToTransmit,
+                                                          this.totalCollisions), this.leftoverTransmissionDuration*1000);
                 }
             }
             else {
                 int backoff = getBackoff(++this.totalCollisions);
-                System.out.println("NIC detects a collision and aborts transmitting the frame and will sense the channel for re-transmission " + backoff + " later. Local time is " + System.nanoTime());
+                System.out.println("NIC detects a collision and aborts transmitting the frame and will sense the channel for re-transmission " + backoff + " later. Local time is " + System.nanoTime() / 1000000000);
                 sendAndWait("ABORT", false);
-                System.out.println("Calling sensing task from collision  "  + backoff);
+                //System.out.println("Calling sensing task from collision  "  + backoff);
                 this.timer.schedule(new SensingTask(this.sendingSocket,
                                                     this.serverAddress,
-                                                    this.timeToTransmit), 1000 * backoff);
+                                                    this.timeToTransmit,
+                                                    this.totalCollisions), 1000 * backoff);
             }
         } 
         catch (Exception e) {
            System.out.println("Exception while performing sensing task " + e.getMessage());
         }
     }
-
+ 
     final private int getBackoff(int high) {
         Random rand = new Random();
         ArrayList<Integer> possibleK = new ArrayList<Integer>();
         high = (int) Math.pow(2, high - 1);
         for (int i = 0; i <= high; i++)  {
+            System.out.println(i + " was added to k's");
             possibleK.add(new Integer(i));
         }
-        return possibleK.get(rand.nextInt(possibleK.size())) * this.timeToTransmit;
+        int k = possibleK.get(rand.nextInt(possibleK.size())) * this.timeToTransmit;
+        System.out.println("The size is " + possibleK.size() + " k is " + k );
+        return k;
     }
 
     final private String sendAndWait(String message, boolean waitForResponse) throws IOException{

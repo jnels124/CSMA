@@ -35,7 +35,7 @@ public class Client {
             System.out.println("There was an error. Expected YESSS and got " + response);
             System.exit(1);
         }
-        this.timer.schedule(new SensingTask(this.dgSocket, this.serverAddress, this.timeToTransmit), 1000*this.initialDelay);
+        this.timer.schedule(new SensingTask(this.dgSocket, this.serverAddress, this.timeToTransmit, 0), 1000*this.initialDelay);
             //System.out.println("Print response and current time here \nThe response is " + response);
     }
 
