@@ -4,6 +4,7 @@ import java.util.*;
 
 public class Channel {
     private static final int PORT = 4567;
+    private static final long START = System.nanoTime();
     private static final int DEFAULT_BUFFER_SIZE = 1024;
     private double propDelay;
     private static BufferedReader sysIn = new BufferedReader(new InputStreamReader(System.in));
@@ -21,7 +22,7 @@ public class Channel {
     }
 
     private void eventLoop () throws IOException {
-        final long t_now = System.nanoTime();
+        final long t_now = (System.nanoTime() - START) / 1000000;
         byte [] buffer = new byte [DEFAULT_BUFFER_SIZE];
         DatagramPacket currentPacket = new DatagramPacket(buffer, buffer.length);
         this.dgSocket.receive(currentPacket);
@@ -40,7 +41,7 @@ public class Channel {
                                 ((t_stop < 0) || ((t_stop + 1000 * this.propDelay) <= t_now)));
                 yesOrNo =
                     yesOrNo || ((t_start <= t_stop) && ((t_stop + 1000 * this.propDelay) <= t_now));
-
+                System.out.println("Yes or no in idle is " + yesOrNo);
                 if (yesOrNo) {
                     buffer = "YES".getBytes();
                     this.dgSocket.send(new DatagramPacket(buffer, buffer.length,
@@ -64,7 +65,7 @@ public class Channel {
                                 ((t_stop < 0) || ((t_stop + 1000 * this.propDelay) <= t_now)));
                     yesOrNo =
                         yesOrNo || ((t_start <= t_stop) && ((t_stop + 1000 * this.propDelay) <= t_now));
-
+                    System.out.println("Yes or no in colide is " + yesOrNo);
                     if (yesOrNo) {
                         buffer = "NO".getBytes();
                         this.dgSocket.send(new DatagramPacket(buffer, buffer.length,
@@ -82,14 +83,14 @@ public class Channel {
             for (Host host : this.connectedHosts) {
                 if (host.getHostIP().equals(currentPacket.getAddress())) {
                     temp = host;
-                    temp.setT_Start(t_now/1000000000);
+                    temp.setT_Start(t_now);
                     break;
                 }
             }
             if (temp == null) {
                 this.connectedHosts.add(new Host(currentPacket.getAddress(),
                                                  currentPacket.getPort(),
-                                                 t_now/1000000000,
+                                                 t_now,
                                                  -1));
             }
             eventLoop();
@@ -100,7 +101,7 @@ public class Channel {
             for (Host host : this.connectedHosts) {
                 if (host.getHostIP().equals(currentPacket.getAddress())) {
                     temp = host;
-                    temp.setT_Stop(t_now/1000000000);
+                    temp.setT_Stop(t_now);
                     break;
                 }
             }
@@ -108,7 +109,7 @@ public class Channel {
                 this.connectedHosts.add(new Host(currentPacket.getAddress(),
                                                  currentPacket.getPort(),
                                                  -1,
-                                                 t_now/1000000000));
+                                                 t_now));
             }
             eventLoop();
         }
@@ -131,7 +132,7 @@ public class Channel {
                 System.out.println("The data is " + currentPacket.getData());
                 simStartsSent++;
             } catch (Exception e) {
-                System.out.println( "There was an error wating for SIMSTART\n" + e.getMessage());
+                System.out.println( "There was an error waiting for SIMSTART\n" + e.getMessage());
             }
         }
         byte [] toClient = "YESSS".getBytes();

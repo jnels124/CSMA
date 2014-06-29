@@ -5,6 +5,7 @@ import java.util.*;
 public class Client {
     private final static int DESTINATION_PORT = 4567;
     private final static String SIMSTART_MSG = "SIMSTART";
+    private static final long START = System.nanoTime();
     private static BufferedReader sysIn =
     new BufferedReader(new InputStreamReader(System.in));
     private InetAddress serverAddress;
@@ -13,8 +14,7 @@ public class Client {
     private DatagramSocket dgSocket;
     private Timer timer;
 
-    public Client (InetAddress serverAddress, int initialDelay,
-     int timeToTransmit )  throws IOException{
+    public Client (InetAddress serverAddress, int initialDelay,int timeToTransmit )  throws IOException{
         System.out.println("Created Client 2");
         this.serverAddress = serverAddress;
         this.initialDelay = initialDelay;
@@ -27,7 +27,7 @@ public class Client {
 
     final private void handleClient () throws IOException{
         System.out.println("Handle client called");
-        int totalCollisions = 0;
+        //int totalCollisions = 0;
         String response;
         long currTime = 0;
         response = sendAndWait(SIMSTART_MSG, true);
@@ -58,6 +58,7 @@ public class Client {
         System.out.println(message);
         return sysIn.readLine();
     }
+
 
     public static void main (String [] args) {
         try {

@@ -4,6 +4,7 @@ import java.io.*;
 
 public class CollisionTask extends TimerTask {
     private final static int DESTINATION_PORT = 4567;
+    private static final long START = System.nanoTime();
     InetAddress serverAddress;
     DatagramSocket sendingSocket;
     Timer timer;
@@ -31,27 +32,28 @@ public class CollisionTask extends TimerTask {
             else {
                 response = sendAndWait("COLIDE", delay, true);
             }*/
-            System.out.println("\nNIC detects collision on channel. Current time is " + System.nanoTime() / 1000000000);
+            System.out.println("\nNIC detects collision on channel. Current time is " + (System.nanoTime() - START) / 1000000000);
             if ("NO".equals(response.toUpperCase())) {
                 if (this.leftoverTransmissionDuration == 0) {
                     sendAndWait("DONE", false);
-                    System.out.println("\nDone with transmitting this frame!. The current time is " + System.nanoTime() / 1000000000);
+                    System.out.println("\nDone with transmitting this frame!. The current time is " + (System.nanoTime() - START) / 1000000000);
                     System.exit(0);
                 } 
                 else if (this.leftoverTransmissionDuration > 0) {
-                    this.leftoverTransmissionDuration = this.leftoverTransmissionDuration - Math.min(1, this.leftoverTransmissionDuration);
+                    int w = Math.min(1, this.leftoverTransmissionDuration);
+                    this.leftoverTransmissionDuration -= w;
                     System.out.println("The NIC is still transmitting. The leftover transmission time is " + this.leftoverTransmissionDuration +
-                                        " The local time is " + System.nanoTime() / 1000000000);
+                                        " The local time is " + (System.nanoTime() - START) / 1000000000);
                     this.timer.schedule(new CollisionTask(this.sendingSocket, 
                                                           this.serverAddress,
                                                           this.leftoverTransmissionDuration, 
                                                           this.timeToTransmit,
-                                                          this.totalCollisions), this.leftoverTransmissionDuration*1000);
+                                                          this.totalCollisions), w * 1000);
                 }
             }
             else {
                 int backoff = getBackoff(++this.totalCollisions);
-                System.out.println("NIC detects a collision and aborts transmitting the frame and will sense the channel for re-transmission " + backoff + " later. Local time is " + System.nanoTime() / 1000000000);
+                System.out.println("NIC detects a collision and aborts transmitting the frame and will sense the channel for re-transmission " + backoff + " later. Local time is " + (System.nanoTime() - START)/ 1000000000);
                 sendAndWait("ABORT", false);
                 //System.out.println("Calling sensing task from collision  "  + backoff);
                 this.timer.schedule(new SensingTask(this.sendingSocket,

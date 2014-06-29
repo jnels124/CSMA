@@ -4,7 +4,8 @@ import java.io.*;
 
 public class SensingTask extends TimerTask {
     //DatagramPacket packetToSend;
-    private final static int DESTINATION_PORT = 4567;
+
+    private static final long START = System.nanoTime();
     DatagramSocket sendingSocket;
     Timer timer;
     int timeToTransmit;
@@ -23,17 +24,17 @@ public class SensingTask extends TimerTask {
 
     public void run () {
         try {
-            System.out.println("NIC senses channel to see whether the channel is idle. Current time is " + System.nanoTime() / 1000000000);
+            System.out.println("NIC senses channel to see whether the channel is idle. Current time is " + (System.nanoTime() - START) / 1000000000);
             String response = sendAndWait("IDLE", true);
         if (response.toUpperCase().equals("NO")) {
                 //currTime =
-            System.out.println("\nThe channel is busy right now. The current time is " + System.nanoTime() / 1000000000);
+            System.out.println("\nThe channel is busy right now. The current time is " + (System.nanoTime() - START) / 1000000000);
             this.timer.schedule(new SensingTask(this.sendingSocket, this.serverAddress, this.timeToTransmit, this.numCollisions), 1000);
         }
         else {
             //System.out.println("First else in handle client ");
             sendAndWait("START", false);
-            System.out.println("\nNIC starts transmitting a frame. Current time is " + System.nanoTime() / 1000000000 + "\nThe leftover transmission time is " + this.timeToTransmit);
+            System.out.println("\nNIC starts transmitting a frame. Current time is " + (System.nanoTime() - START) / 1000000000 + "\nThe leftover transmission time is " + this.timeToTransmit);
             this.timer.schedule(new CollisionTask(this.sendingSocket,
                                                   this.serverAddress,
                                                   this.timeToTransmit,
